@@ -1,5 +1,9 @@
 'use strict';
 
+window.onload = function() {
+    location.hash = '';
+};
+
 const $mainContent = document.querySelector('#content');
 
 document.querySelector('#add-new').addEventListener('click', function() {
@@ -14,7 +18,7 @@ function includeTemplate(tpl) {
 
 let movieCollection = [];
 
-function MOVIE(movieName, originalMovieName, movieYear, movieCountry, movieTagline, movieDirector, movieActors, movieIMDB, movieDescription, additionalPositions) {
+function MOVIE(movieName, originalMovieName, movieYear, movieCountry, movieTagline, movieDirector, movieActors, movieIMDB, movieDescription, additionalPositions, moviePosterBase64) {
     this.id = Date.now()
     this.movieName = movieName,
     this.originalMovieName = originalMovieName,
@@ -25,9 +29,21 @@ function MOVIE(movieName, originalMovieName, movieYear, movieCountry, movieTagli
     this.movieActors = movieActors,
     this.movieIMDB = movieIMDB, 
     this.movieDescription = movieDescription,
-    this.additionalPositions = additionalPositions
-    // this.addMoviePos = addMoviePos || null,
-    // this.addMoviePosName = addMoviePosName || null
+    this.additionalPositions = additionalPositions,
+    this.moviePosterBase64 = moviePosterBase64
+};
+
+function getBase64Pic(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        if(file) {
+            reader.readAsDataURL(file);
+            reader.onload = () => {
+                resolve(reader.result);
+            };
+            reader.onerror = error => reject(error);
+        };
+    });
 };
 
 function hashChanging() {
@@ -35,6 +51,117 @@ function hashChanging() {
     if (location.hash === '#add-new') {
         postModal();
     };
+    if (location.hash === '#list') {
+        showMoviesList();
+    };
+};
+
+async function showMoviesList() {
+    const response = await fetch('card.html');
+    const data = await response.text();
+    movieCollection = parseLocal();
+    includeTemplate(data);
+
+    await document.querySelectorAll('.card').forEach(function(card) {
+        card.addEventListener('click', async function (e) {
+            const el = e.target
+            const currentID = this.querySelector('.more').hash.slice(6);
+            if (el.id === 'editMovie') {
+                console.log(this)
+                editMovie(currentID);
+            };
+            if (el.className === 'more'){
+                showMovie(currentID);
+            };
+            if (el.id === 'deleteMovie'){
+                deleteMovie(currentID)
+                this.remove();
+            }
+        });
+    });
+};
+
+async function editMovie(currentID) {
+    let thisMovieIndex = findIndexById(currentID);
+    const thisMovie = movieCollection[thisMovieIndex]
+    await postModal()
+    const modalForm = document.querySelector('#modalForm');
+    modalForm.elements['movie-name'].value = thisMovie.movieName
+    modalForm.elements['original-movie-name'].value = thisMovie.originalMovieName
+    modalForm.elements['year'].value = thisMovie.movieYear
+    modalForm.elements['country'].value = thisMovie.movieCountry
+    modalForm.elements['tagline'].value = thisMovie.movieTagline
+    modalForm.elements['director'].value = thisMovie.movieDirector
+    modalForm.elements['actors'].value = thisMovie.movieActors
+    modalForm.elements['imdb'].value = thisMovie.movieIMDB
+    modalForm.elements['description'].value = thisMovie.movieDescription
+    // modalForm.elements['poster'] = thisMovie.moviePosterBase64
+};
+
+async function processModal() {
+    let movieName = modalForm.elements['movie-name'].value;
+    let originalMovieName = modalForm.elements['original-movie-name'].value;
+    let movieYear = modalForm.elements['year'].value;
+    let movieCountry = modalForm.elements['country'].value;
+    let movieTagline = modalForm.elements['tagline'].value;
+    let movieDirector = modalForm.elements['director'].value;
+    let movieActors = modalForm.elements['actors'].value.split(',');
+    let movieIMDB = modalForm.elements['imdb'].value;
+    let movieDescription = modalForm.elements['description'].value;
+    let moviePoster = modalForm.elements['poster'];
+    
+    let converted = getBase64Pic(moviePoster.files[0]);
+    let moviePosterBase64 = await converted;
+
+    let additionalPositions = [];
+
+    if (modalForm.elements['add-position'] && modalForm.elements['add-name']) {
+        modalForm.querySelectorAll('.add-field').forEach(function(field) {
+            let pos = field.querySelector('.add-position').value;
+            let name = field.querySelector('.add-name').value;
+            let keys = new Object();
+            keys[pos] = name
+            additionalPositions.push(keys)
+        });
+    };
+    
+    let newMovie = new MOVIE(movieName, originalMovieName, movieYear, movieCountry, 
+                            movieTagline, movieDirector, movieActors, movieIMDB, 
+                            movieDescription, additionalPositions, moviePosterBase64);
+
+    movieCollection.push(newMovie);
+    saveToLocal(movieCollection);
+    $('#Modal').modal('hide');
+    location.hash = 'list';
+};
+
+async function deleteMovie(currentID) {
+    let thisMovieIndex = findIndexById(currentID);
+    movieCollection.splice(thisMovieIndex, 1)
+    saveToLocal(movieCollection);
+};
+function findIndexById(currentID) {
+    return movieCollection.findIndex((film) => {
+        if (film.id === +currentID) {
+            return film;
+        };
+    });
+};
+async function showMovie(currentID){
+    const response = await fetch('movie.html');
+    const data = await response.text();
+    let thisMovieIndex = findIndexById(currentID)
+    movieCollection = movieCollection[thisMovieIndex];
+    includeTemplate(data);
+    await document.querySelector('.movie-details').addEventListener('click',({target: el}) => {
+        
+        let counter = 0;
+        if(el.classList.contains('count-btns')) {
+            el.setAttribute('data-count', ++counter)
+            movieCollection.rate = counter
+            console.log(movieCollection)
+        };
+    });
 };
 
 async function postModal() {
@@ -44,20 +171,21 @@ async function postModal() {
     modalWrap.innerHTML = data;
     $mainContent.appendChild(modalWrap);
     $('#Modal').modal('show');
-
+    $('#Modal').on('hidden.bs.modal', function () {
+        modalWrap.remove();
+        location.hash = '';
+    })
     await document.querySelector('#closeModal').addEventListener('click', function() {
         location.hash = '';
         $('#Modal').modal('hide');
-        modalWrap.remove()
     });
 
     await document.querySelector('#cancelModal').addEventListener('click', function() {
         location.hash = '';
         $('#Modal').modal('hide');
-        modalWrap.remove()
     });
 
-    await document.querySelector('.modal-content').addEventListener('click', function(e) {
+    await document.querySelector('.modal-content').addEventListener('click', async function(e) {
         const el = e.target;
         const modalForm = document.querySelector('#modalForm');
         
@@ -79,45 +207,19 @@ async function postModal() {
             el.parentElement.parentElement.remove()
         };
         if (el.id === 'saveModal') {
-            let movieName = modalForm.elements['movie-name'].value;
-            let originalMovieName = modalForm.elements['original-movie-name'].value;
-            let movieYear = modalForm.elements['year'].value;
-            let movieCountry = modalForm.elements['country'].value;
-            let movieTagline = modalForm.elements['tagline'].value;
-            let movieDirector = modalForm.elements['director'].value;
-            let movieActors = modalForm.elements['actors'].value.split(',');
-            let movieIMDB = modalForm.elements['imdb'].value;
-            let movieDescription = modalForm.elements['description'].value;
-            let moviePoster = modalForm.elements['poster']; ////??????
-
-            let additionalPositions = [];
-            // console.dir(moviePoster)
-            if (modalForm.elements['add-position'] && modalForm.elements['add-name']) {
-                
-                this.querySelectorAll('.add-field').forEach(function(field) {
-                    let keys = {};
-                    let pos = field.querySelector('.add-position').value;
-                    let name = field.querySelector('.add-name').value;
-                    Object.defineProperty(keys, pos, {
-                        value: name
-                    });
-                    additionalPositions.push(keys)
-                });
-            };
-
-            let newMovie = new MOVIE(movieName, originalMovieName, movieYear, movieCountry, 
-                                    movieTagline, movieDirector, movieActors, movieIMDB, 
-                                    movieDescription, additionalPositions);
-
-            movieCollection.push(newMovie);
-            console.log(movieCollection);
-            saveToLocal(movieCollection)
+            processModal();
         };
     });
-}
+};
+
+function parseLocal() {
+    if(localStorage.movieCollection) {
+        return JSON.parse(localStorage.movieCollection)
+    };
+};
 
 function saveToLocal(file) {
-    localStorage.setItem('movie', JSON.stringify(file));
+    localStorage.setItem('movieCollection', JSON.stringify(file));
 };
 
 window.addEventListener("hashchange", () => hashChanging());
