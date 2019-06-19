@@ -67,7 +67,6 @@ async function showMoviesList() {
             const el = e.target
             const currentID = this.querySelector('.more').hash.slice(6);
             if (el.id === 'editMovie') {
-                console.log(this)
                 editMovie(currentID);
             };
             if (el.className === 'more'){
@@ -76,29 +75,64 @@ async function showMoviesList() {
             if (el.id === 'deleteMovie'){
                 deleteMovie(currentID)
                 this.remove();
-            }
+            };
         });
     });
 };
 
 async function editMovie(currentID) {
     let thisMovieIndex = findIndexById(currentID);
-    const thisMovie = movieCollection[thisMovieIndex]
+    const thisMovie = movieCollection[thisMovieIndex];
     await postModal()
     const modalForm = document.querySelector('#modalForm');
-    modalForm.elements['movie-name'].value = thisMovie.movieName
-    modalForm.elements['original-movie-name'].value = thisMovie.originalMovieName
-    modalForm.elements['year'].value = thisMovie.movieYear
-    modalForm.elements['country'].value = thisMovie.movieCountry
-    modalForm.elements['tagline'].value = thisMovie.movieTagline
-    modalForm.elements['director'].value = thisMovie.movieDirector
-    modalForm.elements['actors'].value = thisMovie.movieActors
-    modalForm.elements['imdb'].value = thisMovie.movieIMDB
-    modalForm.elements['description'].value = thisMovie.movieDescription
-    // modalForm.elements['poster'] = thisMovie.moviePosterBase64
+
+    modalForm.elements['movie-name'].value = thisMovie.movieName;
+    modalForm.elements['original-movie-name'].value = thisMovie.originalMovieName;
+    modalForm.elements['year'].value = thisMovie.movieYear;
+    modalForm.elements['country'].value = thisMovie.movieCountry;
+    modalForm.elements['tagline'].value = thisMovie.movieTagline;
+    modalForm.elements['director'].value = thisMovie.movieDirector;
+    modalForm.elements['actors'].value = thisMovie.movieActors;
+    modalForm.elements['imdb'].value = thisMovie.movieIMDB;
+    modalForm.elements['description'].value = thisMovie.movieDescription;
+
+    document.querySelector('#saveModal').addEventListener('click', async function(e) {
+        e.stopImmediatePropagation();
+
+        thisMovie.id = thisMovie.id
+        thisMovie.movieName = modalForm.elements['movie-name'].value;
+        thisMovie.originalMovieName = modalForm.elements['original-movie-name'].value;
+        thisMovie.movieYear = modalForm.elements['year'].value;
+        thisMovie.movieCountry = modalForm.elements['country'].value;
+        thisMovie.movieTagline = modalForm.elements['tagline'].value;
+        thisMovie.movieDirector = modalForm.elements['director'].value;
+        thisMovie.movieActors = modalForm.elements['actors'].value.split(',');
+        thisMovie.movieIMDB = modalForm.elements['imdb'].value;
+        thisMovie.movieDescription = modalForm.elements['description'].value;
+        thisMovie.moviePosterBase64 = await getBase64Pic(modalForm.elements['poster'].files[0]);
+        let additionalPositions = [];
+
+        if (modalForm.elements['add-position'] && modalForm.elements['add-name']) {
+            modalForm.querySelectorAll('.add-field').forEach(function(field) {
+                let pos = field.querySelector('.add-position').value;
+                let name = field.querySelector('.add-name').value;
+                let keys = new Object();
+                keys[pos] = name
+                additionalPositions.push(keys);
+            });
+        };
+
+        thisMovie.additionalPositions = additionalPositions;
+        
+        saveToLocal(movieCollection);
+        $('#Modal').modal('hide');
+        location.hash = 'list';
+    });
 };
 
 async function processModal() {
+    const modalForm = document.querySelector('#modalForm');
+
     let movieName = modalForm.elements['movie-name'].value;
     let originalMovieName = modalForm.elements['original-movie-name'].value;
     let movieYear = modalForm.elements['year'].value;
@@ -150,16 +184,17 @@ function findIndexById(currentID) {
 async function showMovie(currentID){
     const response = await fetch('movie.html');
     const data = await response.text();
-    let thisMovieIndex = findIndexById(currentID)
+    const thisMovieIndex = findIndexById(currentID)
     movieCollection = movieCollection[thisMovieIndex];
     includeTemplate(data);
     await document.querySelector('.movie-details').addEventListener('click',({target: el}) => {
-        
+        movieCollection = parseLocal();
+        // console.log(movieCollection[thisMovieIndex]);
         let counter = 0;
         if(el.classList.contains('count-btns')) {
             el.setAttribute('data-count', ++counter)
-            movieCollection.rate = counter
-            console.log(movieCollection)
+            movieCollection[thisMovieIndex].rate = counter
+            saveToLocal(movieCollection);
         };
     });
 };
@@ -187,7 +222,7 @@ async function postModal() {
 
     await document.querySelector('.modal-content').addEventListener('click', async function(e) {
         const el = e.target;
-        const modalForm = document.querySelector('#modalForm');
+        // const modalForm = document.querySelector('#modalForm');
         
         let addField = document.createElement('div')
         addField.setAttribute('class','add-field form-group row');
@@ -207,6 +242,7 @@ async function postModal() {
             el.parentElement.parentElement.remove()
         };
         if (el.id === 'saveModal') {
+            e.stopImmediatePropagation();
             processModal();
         };
     });
