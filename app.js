@@ -1,21 +1,17 @@
 'use strict';
 
 window.onload = function() {
-    // location.hash = '';
     if (location.hash === '#list') {
         showMoviesList();
     };
     if (location.hash === '#search') {
         
-    }
+    };
 };
 
 const $mainContent = document.querySelector('#content');
 
-document.querySelector('#add-new').addEventListener('click', function() {
-    // location.hash = 'add-new';
-    postModal();
-});
+document.querySelector('#add-new').addEventListener('click', () => postModal());
 
 function includeTemplate(tpl) {
     const template = _.template(tpl);
@@ -113,7 +109,7 @@ async function showMoviesSearch() {
 async function editMovie(currentID) {
     let thisMovieIndex = findIndexById(currentID);
     const thisMovie = movieCollection[thisMovieIndex];
-    await postModal()
+    await postModal(currentID)
     const modalForm = document.querySelector('#modalForm');
 
     modalForm.elements['movie-name'].value = thisMovie.movieName;
@@ -162,6 +158,7 @@ async function editMovie(currentID) {
 };
 
 async function processModal() {
+    movieCollection
     const modalForm = document.querySelector('#modalForm');
 
     let movieName = modalForm.elements['movie-name'].value;
@@ -221,7 +218,6 @@ async function showMovie(currentID){
     includeTemplate(data);
     await document.querySelector('.movie-details').addEventListener('click',({target: el}) => {
         movieCollection = parseLocal();
-        // console.log(movieCollection[thisMovieIndex]);
         let counter = 0;
         if(el.classList.contains('count-btns')) {
             el.setAttribute('data-count', ++counter)
@@ -231,16 +227,25 @@ async function showMovie(currentID){
     });
 };
 
-async function postModal() {
+async function postModal(currentID) {
     const response = await fetch('add-new.html');
     const data = await response.text();
+    // includeTemplate(data)
+
     let modalWrap = await document.createElement('div');
     modalWrap.innerHTML = data;
     $mainContent.appendChild(modalWrap);
     $('#Modal').modal('show');
     $('#Modal').on('hidden.bs.modal', function () {
         modalWrap.remove();
-    })
+    });
+    
+    if (currentID) {
+        let thisMovieIndex = findIndexById(currentID);
+        let thisMovie = movieCollection[thisMovieIndex];
+        console.log(thisMovie)
+    };
+
     await document.querySelector('#closeModal').addEventListener('click', function() {
         $('#Modal').modal('hide');
     });
