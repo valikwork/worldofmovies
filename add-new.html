@@ -11,18 +11,18 @@
         <form class="w-75 mx-auto" id="modalForm">
             <div class="form-group">
               <label>Название фильма:</label>
-              <input type="text" name="movie-name" class="form-control">
+              <input required type="text" name="movie-name" class="form-control">
             </div>
             <div class="form-group">
               <label>Оригинальное название фильма:</label>
-              <input type="text" name="original-movie-name" class="form-control">
+              <input required type="text" name="original-movie-name" class="form-control">
             </div>
             <div class="input-group mb-3">
               <div class="input-group-prepend">
                 <span class="input-group-text" id="upload-poster-addon">Постер</span>
               </div>
               <div class="custom-file">
-                <input type="file" class="custom-file-input" name="poster" id="upload-poster" aria-describedby="upload-poster-addon">
+                <input required type="file" class="custom-file-input" name="poster" id="upload-poster" aria-describedby="upload-poster-addon">
                 <label class="custom-file-label" for="upload-poster">Выберите файл</label>
               </div>
             </div>
@@ -31,25 +31,25 @@
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Год:</label>
                 <div class="col-sm-10">
-                  <input type="text" name="year" class="form-control">
+                  <input required type="text" name="year" class="form-control">
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Страна:</label>
                 <div class="col-sm-10">
-                  <input type="text" name='country' class="form-control">
+                  <input required type="text" name='country' class="form-control">
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Слоган:</label>
                 <div class="col-sm-10">
-                  <input type="text" name="tagline" class="form-control">
+                  <input required type="text" name="tagline" class="form-control">
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Режиссер:</label>
                 <div class="col-sm-8">
-                  <input type="text" name="director" class="form-control">
+                  <input required type="text" name="director" class="form-control">
                 </div>
                 <div class="col-sm-2">
                   <button class="btn btn-primary btn-add-field" id="addField" type="button"><svg class="octicon octicon-plus" viewBox="0 0 12 16" version="1.1" width="12" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M12 9H7v5H5V9H0V7h5V2h2v5h5v2z"></path></svg></button>
@@ -74,7 +74,7 @@
       </div>
       <div class="modal-footer justify-content-center">
         <button type="button" class="btn btn-outline-danger" data-dismiss="modal" id='cancelModal'>Отменить</button>
-        <button type="button" class="btn btn-primary mr-3" id="saveModal">Сохранить</button>
+        <button type="submit" class="btn btn-primary mr-3" form="modalForm" id="saveModal">Сохранить</button>
       </div>
     </div>
   </div>

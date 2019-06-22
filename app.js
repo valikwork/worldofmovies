@@ -1,13 +1,20 @@
 'use strict';
 
 window.onload = function() {
-    location.hash = '';
+    // location.hash = '';
+    if (location.hash === '#list') {
+        showMoviesList();
+    };
+    if (location.hash === '#search') {
+        
+    }
 };
 
 const $mainContent = document.querySelector('#content');
 
 document.querySelector('#add-new').addEventListener('click', function() {
-    location.hash = 'add-new';
+    // location.hash = 'add-new';
+    postModal();
 });
 
 function includeTemplate(tpl) {
@@ -48,11 +55,14 @@ function getBase64Pic(file) {
 
 function hashChanging() {
 
-    if (location.hash === '#add-new') {
-        postModal();
-    };
+    // if (location.hash === '#add-new') {
+    //     postModal();
+    // };
     if (location.hash === '#list') {
         showMoviesList();
+    };
+    if (location.hash === ''){
+        $mainContent.innerHTML = '<h1 class="mt-5 text-center text-uppercase">Добро пожаловать<br> на портал Мир Кино!</h1>';
     };
 };
 
@@ -80,6 +90,26 @@ async function showMoviesList() {
     });
 };
 
+document.querySelector('#search').addEventListener('submit', function(e) {
+    e.preventDefault();
+    location.hash = 'search';
+    showMoviesSearch();
+});
+
+async function showMoviesSearch() {
+    let searchQuery = document.querySelector('#search').elements['search'];
+    movieCollection = parseLocal()
+    movieCollection = Array.of(movieCollection.find(function(item) {
+        if(!item.movieName.indexOf(searchQuery.value)) {
+            return item;
+        };
+    }));
+    searchQuery.value = '';
+    const response = await fetch('card.html');
+    const data = await response.text();
+    includeTemplate(data);
+};
+
 async function editMovie(currentID) {
     let thisMovieIndex = findIndexById(currentID);
     const thisMovie = movieCollection[thisMovieIndex];
@@ -96,8 +126,9 @@ async function editMovie(currentID) {
     modalForm.elements['imdb'].value = thisMovie.movieIMDB;
     modalForm.elements['description'].value = thisMovie.movieDescription;
 
-    document.querySelector('#saveModal').addEventListener('click', async function(e) {
+    document.querySelector('#modalForm').addEventListener('submit', async function(e) {
         e.stopImmediatePropagation();
+        e.preventDefault()
 
         thisMovie.id = thisMovie.id
         thisMovie.movieName = modalForm.elements['movie-name'].value;
@@ -122,11 +153,11 @@ async function editMovie(currentID) {
             });
         };
 
-        thisMovie.additionalPositions = additionalPositions;
-        
+        thisMovie.additionalPositions = additionalPositions; 
         saveToLocal(movieCollection);
         $('#Modal').modal('hide');
         location.hash = 'list';
+        showMoviesList();
     });
 };
 
@@ -167,6 +198,7 @@ async function processModal() {
     saveToLocal(movieCollection);
     $('#Modal').modal('hide');
     location.hash = 'list';
+    showMoviesList();
 };
 
 async function deleteMovie(currentID) {
@@ -208,29 +240,25 @@ async function postModal() {
     $('#Modal').modal('show');
     $('#Modal').on('hidden.bs.modal', function () {
         modalWrap.remove();
-        location.hash = '';
     })
     await document.querySelector('#closeModal').addEventListener('click', function() {
-        location.hash = '';
         $('#Modal').modal('hide');
     });
 
     await document.querySelector('#cancelModal').addEventListener('click', function() {
-        location.hash = '';
         $('#Modal').modal('hide');
     });
 
     await document.querySelector('.modal-content').addEventListener('click', async function(e) {
         const el = e.target;
-        // const modalForm = document.querySelector('#modalForm');
         
         let addField = document.createElement('div')
         addField.setAttribute('class','add-field form-group row');
         addField.innerHTML = `<div class="col-sm-5">
-               <input type="text" name="add-position" class="form-control add-position" placeholder="Должность">
+               <input required type="text" name="add-position" class="form-control add-position" placeholder="Должность">
              </div>
              <div class="col-sm-5">
-               <input type="text" name="add-name" class="form-control add-name" placeholder="Имя">
+               <input required type="text" name="add-name" class="form-control add-name" placeholder="Имя">
              </div>
              <div class="col-sm-2">
                <button class="btn btn-danger btn-sm btn-remove-field" id='removeField' type="button"><svg class="octicon octicon-x" viewBox="0 0 14 18" version="1.1" width="14" height="18" aria-hidden="true"><path fill-rule="evenodd" d="M7.48 8l3.75 3.75-1.48 1.48L6 9.48l-3.75 3.75-1.48-1.48L4.52 8 .77 4.25l1.48-1.48L6 6.52l3.75-3.75 1.48 1.48L7.48 8z"></path></svg></button>
@@ -241,10 +269,11 @@ async function postModal() {
         if (el.id === 'removeField') {
             el.parentElement.parentElement.remove()
         };
-        if (el.id === 'saveModal') {
+        this.querySelector('#modalForm').addEventListener('submit', function(e) {
+            e.preventDefault()
             e.stopImmediatePropagation();
             processModal();
-        };
+        })
     });
 };
 
