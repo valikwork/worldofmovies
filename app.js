@@ -158,7 +158,7 @@ async function editMovie(currentID) {
 };
 
 async function processModal() {
-    movieCollection
+    movieCollection = parseLocal() || [];
     const modalForm = document.querySelector('#modalForm');
 
     let movieName = modalForm.elements['movie-name'].value;
