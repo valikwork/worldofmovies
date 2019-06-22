@@ -55,11 +55,21 @@
                   <button class="btn btn-primary btn-add-field" id="addField" type="button"><svg class="octicon octicon-plus" viewBox="0 0 12 16" version="1.1" width="12" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M12 9H7v5H5V9H0V7h5V2h2v5h5v2z"></path></svg></button>
                 </div>
               </div>
-              <!-- <%  %>
-                <%  %>
-                
-                <%  %>
-              <%  %> -->
+              <% if(thisMovie.length === 1) { %>
+                <% for (let i = 0; i < thisMovie[0].additionalPositions.length; i++) { %>
+                  <div class="add-field form-group row">
+                    <div class="col-sm-5">
+                      <input required type="text" name="add-position" class="form-control add-position" placeholder="Должность">
+                    </div>
+                    <div class="col-sm-5">
+                      <input required type="text" name="add-name" class="form-control add-name" placeholder="Имя">
+                    </div>
+                    <div class="col-sm-2">
+                      <button class="btn btn-danger btn-sm btn-remove-field" id='removeField' type="button"><svg class="octicon octicon-x" viewBox="0 0 14 18" version="1.1" width="14" height="18" aria-hidden="true"><path fill-rule="evenodd" d="M7.48 8l3.75 3.75-1.48 1.48L6 9.48l-3.75 3.75-1.48-1.48L4.52 8 .77 4.25l1.48-1.48L6 6.52l3.75-3.75 1.48 1.48L7.48 8z"></path></svg></button>
+                    </div>
+                  </div>
+                <% } %>
+              <% } %>
             </fieldset>
             <div class="form-group">
               <label>В ролях:</label>

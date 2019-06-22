@@ -13,11 +13,20 @@ const $mainContent = document.querySelector('#content');
 
 document.querySelector('#add-new').addEventListener('click', () => postModal());
 
-function includeTemplate(tpl) {
+function installTemplate(tpl) {
     const template = _.template(tpl);
     const compile = template(tpl);
     $mainContent.innerHTML = compile;
 };
+
+function getTemplate(tpl) {
+    const template = _.template(tpl);
+    const compile = template(tpl);
+    return compile;
+    // const wrap = document.createElement('div')
+    // wrap.innerHTML = compile
+    // $mainContent.appendChild(wrap);
+}
 
 let movieCollection = [];
 
@@ -66,7 +75,7 @@ async function showMoviesList() {
     const response = await fetch('card.html');
     const data = await response.text();
     movieCollection = parseLocal();
-    includeTemplate(data);
+    installTemplate(data);
 
     await document.querySelectorAll('.card').forEach(function(card) {
         card.addEventListener('click', async function (e) {
@@ -103,13 +112,13 @@ async function showMoviesSearch() {
     searchQuery.value = '';
     const response = await fetch('card.html');
     const data = await response.text();
-    includeTemplate(data);
+    installTemplate(data);
 };
 
 async function editMovie(currentID) {
     let thisMovieIndex = findIndexById(currentID);
     const thisMovie = movieCollection[thisMovieIndex];
-    await postModal(currentID)
+    await postEditModal(currentID)
     const modalForm = document.querySelector('#modalForm');
 
     modalForm.elements['movie-name'].value = thisMovie.movieName;
@@ -148,8 +157,8 @@ async function editMovie(currentID) {
                 additionalPositions.push(keys);
             });
         };
-
         thisMovie.additionalPositions = additionalPositions; 
+
         saveToLocal(movieCollection);
         $('#Modal').modal('hide');
         location.hash = 'list';
@@ -215,7 +224,7 @@ async function showMovie(currentID){
     const data = await response.text();
     const thisMovieIndex = findIndexById(currentID)
     movieCollection = movieCollection[thisMovieIndex];
-    includeTemplate(data);
+    installTemplate(data);
     await document.querySelector('.movie-details').addEventListener('click',({target: el}) => {
         movieCollection = parseLocal();
         let counter = 0;
@@ -226,26 +235,7 @@ async function showMovie(currentID){
         };
     });
 };
-
-async function postModal(currentID) {
-    const response = await fetch('add-new.html');
-    const data = await response.text();
-    // includeTemplate(data)
-
-    let modalWrap = await document.createElement('div');
-    modalWrap.innerHTML = data;
-    $mainContent.appendChild(modalWrap);
-    $('#Modal').modal('show');
-    $('#Modal').on('hidden.bs.modal', function () {
-        modalWrap.remove();
-    });
-    
-    if (currentID) {
-        let thisMovieIndex = findIndexById(currentID);
-        let thisMovie = movieCollection[thisMovieIndex];
-        console.log(thisMovie)
-    };
-
+async function handleModal() {
     await document.querySelector('#closeModal').addEventListener('click', function() {
         $('#Modal').modal('hide');
     });
@@ -280,6 +270,62 @@ async function postModal(currentID) {
             processModal();
         })
     });
+}
+let thisMovie;
+async function postEditModal(currentID) {
+    const response = await fetch('add-new.html');
+    const data = await response.text();
+    const thisMovieIndex = findIndexById(currentID)
+    thisMovie = Array.of(movieCollection[thisMovieIndex]);
+    // movieCollection = Array.of(thisMovie);
+    // thisMovie = movieCollection
+    let modalWrap = await document.createElement('div');
+    modalWrap.innerHTML = getTemplate(data);
+    $mainContent.appendChild(modalWrap);
+    $('#Modal').modal('show');
+    $('#Modal').on('hidden.bs.modal', function () {
+        modalWrap.remove();
+    });
+    console.log(movieCollection)
+    console.log(thisMovie)
+    handleModal()
+    saveToLocal(movieCollection);
+}
+
+
+async function postModal(currentID) {
+    let modalWrap = await document.createElement('div');
+    const response = await fetch('add-new.html');
+    const data = await response.text();
+    modalWrap.innerHTML = getTemplate(data);
+    $mainContent.appendChild(modalWrap);
+    $('#Modal').modal('show');
+    // if(!currentID) {
+    //     const response = await fetch('add-new.html');
+    //     const data = await response.text();
+    //     modalWrap.innerHTML = getTemplate(data);
+    //     $mainContent.appendChild(modalWrap);
+    //     $('#Modal').modal('show');
+    //     console.log(movieCollection)
+    // } else {
+    //     const response = await fetch('add-new.html');
+    //     const data = await response.text();
+    //     const thisMovieIndex = findIndexById(currentID)
+    //     let thisMovie = movieCollection[thisMovieIndex];
+    //     movieCollection = Array.of(thisMovie);
+    //     // thisMovie = movieCollection
+    //     modalWrap.innerHTML = getTemplate(data);
+    //     $mainContent.appendChild(modalWrap);
+    //     $('#Modal').modal('show');
+    //     console.log(movieCollection)
+    //     console.log(thisMovie)
+    //     movieCollection = parseLocal();
+    // };
+    $('#Modal').on('hidden.bs.modal', function () {
+        modalWrap.remove();
+    });
+    handleModal()
+    
 };
 
 function parseLocal() {
