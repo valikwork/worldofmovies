@@ -7,19 +7,30 @@ window.onload = function() {
     if (location.hash === '#search') {
         
     };
+    if (location.hash.length > 6) {
+        const id = location.hash.slice(6)
+        showMovie(id);
+    };
 };
 
 const $mainContent = document.querySelector('#content');
 
 document.querySelector('#add-new').addEventListener('click', () => postModal());
 
-function includeTemplate(tpl) {
+function installTemplate(tpl) {
     const template = _.template(tpl);
     const compile = template(tpl);
     $mainContent.innerHTML = compile;
 };
 
-let movieCollection = [];
+function getTemplate(tpl) {
+    const template = _.template(tpl);
+    const compile = template(tpl);
+    return compile;
+};
+
+let movieCollection = parseLocal() || [];
+let thisMovie;
 
 function MOVIE(movieName, originalMovieName, movieYear, movieCountry, movieTagline, movieDirector, movieActors, movieIMDB, movieDescription, additionalPositions, moviePosterBase64) {
     this.id = Date.now()
@@ -50,10 +61,6 @@ function getBase64Pic(file) {
 };
 
 function hashChanging() {
-
-    // if (location.hash === '#add-new') {
-    //     postModal();
-    // };
     if (location.hash === '#list') {
         showMoviesList();
     };
@@ -66,7 +73,7 @@ async function showMoviesList() {
     const response = await fetch('card.html');
     const data = await response.text();
     movieCollection = parseLocal();
-    includeTemplate(data);
+    installTemplate(data);
 
     await document.querySelectorAll('.card').forEach(function(card) {
         card.addEventListener('click', async function (e) {
@@ -79,8 +86,11 @@ async function showMoviesList() {
                 showMovie(currentID);
             };
             if (el.id === 'deleteMovie'){
-                deleteMovie(currentID)
-                this.remove();
+                let res = confirm('Вы действительно хотите удалить этот фильм?');
+                if (res) {
+                    deleteMovie(currentID)
+                    this.remove();
+                };
             };
         });
     });
@@ -92,24 +102,27 @@ document.querySelector('#search').addEventListener('submit', function(e) {
     showMoviesSearch();
 });
 
-async function showMoviesSearch() {
-    let searchQuery = document.querySelector('#search').elements['search'];
+async function showMoviesSearch(id) {
+    let searchQuery = document.querySelector('#search').elements['search'] || id; // возможно убрать id
     movieCollection = parseLocal()
-    movieCollection = Array.of(movieCollection.find(function(item) {
-        if(!item.movieName.indexOf(searchQuery.value)) {
-            return item;
+    let foundMovies = []
+    movieCollection.forEach(function(item) {
+        console.log()
+        if(item.movieName.split('').includes(searchQuery.value)) {
+           foundMovies.push(item);
         };
-    }));
+    });
+    movieCollection = foundMovies;
     searchQuery.value = '';
     const response = await fetch('card.html');
     const data = await response.text();
-    includeTemplate(data);
+    installTemplate(data);
 };
 
 async function editMovie(currentID) {
     let thisMovieIndex = findIndexById(currentID);
     const thisMovie = movieCollection[thisMovieIndex];
-    await postModal(currentID)
+    await postEditModal(currentID)
     const modalForm = document.querySelector('#modalForm');
 
     modalForm.elements['movie-name'].value = thisMovie.movieName;
@@ -121,6 +134,24 @@ async function editMovie(currentID) {
     modalForm.elements['actors'].value = thisMovie.movieActors;
     modalForm.elements['imdb'].value = thisMovie.movieIMDB;
     modalForm.elements['description'].value = thisMovie.movieDescription;
+
+    if(modalForm.elements['add-position'] && modalForm.elements['add-name']) {
+        
+        let addPos = thisMovie.additionalPositions;
+        let keys = [];
+        let value = [];
+        addPos.forEach(function(position){
+            keys.push(Object.keys(position))
+            value.push(Object.values(position))
+        })
+        keys = keys.join().split(',');
+        value = value.join().split(',');
+        modalForm.querySelectorAll('.add-field').forEach(function(field, i) {
+            field.querySelector('.add-position').value = keys[i]
+            field.querySelector('.add-name').value = value[i]
+        });
+    };
+
 
     document.querySelector('#modalForm').addEventListener('submit', async function(e) {
         e.stopImmediatePropagation();
@@ -148,8 +179,8 @@ async function editMovie(currentID) {
                 additionalPositions.push(keys);
             });
         };
-
         thisMovie.additionalPositions = additionalPositions; 
+
         saveToLocal(movieCollection);
         $('#Modal').modal('hide');
         location.hash = 'list';
@@ -214,38 +245,24 @@ async function showMovie(currentID){
     const response = await fetch('movie.html');
     const data = await response.text();
     const thisMovieIndex = findIndexById(currentID)
-    movieCollection = movieCollection[thisMovieIndex];
-    includeTemplate(data);
+    thisMovie = movieCollection[thisMovieIndex];
+    installTemplate(data);
     await document.querySelector('.movie-details').addEventListener('click',({target: el}) => {
-        movieCollection = parseLocal();
         let counter = 0;
-        if(el.classList.contains('count-btns')) {
+
+        if(el.id === 'countUp') {
             el.setAttribute('data-count', ++counter)
-            movieCollection[thisMovieIndex].rate = counter
+            thisMovie.upVote = counter
+            saveToLocal(movieCollection);
+        };
+        if(el.id === 'countDown') {
+            el.setAttribute('data-count', ++counter)
+            thisMovie.downVote = counter
             saveToLocal(movieCollection);
         };
     });
 };
-
-async function postModal(currentID) {
-    const response = await fetch('add-new.html');
-    const data = await response.text();
-    // includeTemplate(data)
-
-    let modalWrap = await document.createElement('div');
-    modalWrap.innerHTML = data;
-    $mainContent.appendChild(modalWrap);
-    $('#Modal').modal('show');
-    $('#Modal').on('hidden.bs.modal', function () {
-        modalWrap.remove();
-    });
-    
-    if (currentID) {
-        let thisMovieIndex = findIndexById(currentID);
-        let thisMovie = movieCollection[thisMovieIndex];
-        console.log(thisMovie)
-    };
-
+async function handleModal() {
     await document.querySelector('#closeModal').addEventListener('click', function() {
         $('#Modal').modal('hide');
     });
@@ -280,6 +297,37 @@ async function postModal(currentID) {
             processModal();
         })
     });
+}
+
+async function postEditModal(currentID) {
+    const response = await fetch('add-new.html');
+    const data = await response.text();
+    const thisMovieIndex = findIndexById(currentID)
+    thisMovie = Array.of(movieCollection[thisMovieIndex]);
+    let modalWrap = await document.createElement('div');
+    modalWrap.innerHTML = getTemplate(data);
+    $mainContent.appendChild(modalWrap);
+    $('#Modal').modal('show');
+    $('#Modal').on('hidden.bs.modal', function () {
+        modalWrap.remove();
+    });
+    handleModal();
+    saveToLocal(movieCollection);
+    thisMovie = '';
+};
+
+
+async function postModal() {
+    let modalWrap = await document.createElement('div');
+    const response = await fetch('add-new.html');
+    const data = await response.text();
+    modalWrap.innerHTML = getTemplate(data);
+    $mainContent.appendChild(modalWrap);
+    $('#Modal').modal('show');
+    $('#Modal').on('hidden.bs.modal', function () {
+        modalWrap.remove();
+    });
+    handleModal();
 };
 
 function parseLocal() {
