@@ -7,6 +7,10 @@ window.onload = function() {
     if (location.hash === '#search') {
         
     };
+    if (location.hash.length > 6) {
+        const id = location.hash.slice(6)
+        showMovie(id);
+    };
 };
 
 const $mainContent = document.querySelector('#content');
@@ -23,12 +27,10 @@ function getTemplate(tpl) {
     const template = _.template(tpl);
     const compile = template(tpl);
     return compile;
-    // const wrap = document.createElement('div')
-    // wrap.innerHTML = compile
-    // $mainContent.appendChild(wrap);
-}
+};
 
-let movieCollection = [];
+let movieCollection = parseLocal() || [];
+let thisMovie;
 
 function MOVIE(movieName, originalMovieName, movieYear, movieCountry, movieTagline, movieDirector, movieActors, movieIMDB, movieDescription, additionalPositions, moviePosterBase64) {
     this.id = Date.now()
@@ -59,10 +61,6 @@ function getBase64Pic(file) {
 };
 
 function hashChanging() {
-
-    // if (location.hash === '#add-new') {
-    //     postModal();
-    // };
     if (location.hash === '#list') {
         showMoviesList();
     };
@@ -88,8 +86,11 @@ async function showMoviesList() {
                 showMovie(currentID);
             };
             if (el.id === 'deleteMovie'){
-                deleteMovie(currentID)
-                this.remove();
+                let res = confirm('Вы действительно хотите удалить этот фильм?');
+                if (res) {
+                    deleteMovie(currentID)
+                    this.remove();
+                };
             };
         });
     });
@@ -101,14 +102,17 @@ document.querySelector('#search').addEventListener('submit', function(e) {
     showMoviesSearch();
 });
 
-async function showMoviesSearch() {
-    let searchQuery = document.querySelector('#search').elements['search'];
+async function showMoviesSearch(id) {
+    let searchQuery = document.querySelector('#search').elements['search'] || id; // возможно убрать id
     movieCollection = parseLocal()
-    movieCollection = Array.of(movieCollection.find(function(item) {
-        if(!item.movieName.indexOf(searchQuery.value)) {
-            return item;
+    let foundMovies = []
+    movieCollection.forEach(function(item) {
+        console.log()
+        if(item.movieName.split('').includes(searchQuery.value)) {
+           foundMovies.push(item);
         };
-    }));
+    });
+    movieCollection = foundMovies;
     searchQuery.value = '';
     const response = await fetch('card.html');
     const data = await response.text();
@@ -130,6 +134,24 @@ async function editMovie(currentID) {
     modalForm.elements['actors'].value = thisMovie.movieActors;
     modalForm.elements['imdb'].value = thisMovie.movieIMDB;
     modalForm.elements['description'].value = thisMovie.movieDescription;
+
+    if(modalForm.elements['add-position'] && modalForm.elements['add-name']) {
+        
+        let addPos = thisMovie.additionalPositions;
+        let keys = [];
+        let value = [];
+        addPos.forEach(function(position){
+            keys.push(Object.keys(position))
+            value.push(Object.values(position))
+        })
+        keys = keys.join().split(',');
+        value = value.join().split(',');
+        modalForm.querySelectorAll('.add-field').forEach(function(field, i) {
+            field.querySelector('.add-position').value = keys[i]
+            field.querySelector('.add-name').value = value[i]
+        });
+    };
+
 
     document.querySelector('#modalForm').addEventListener('submit', async function(e) {
         e.stopImmediatePropagation();
@@ -223,14 +245,19 @@ async function showMovie(currentID){
     const response = await fetch('movie.html');
     const data = await response.text();
     const thisMovieIndex = findIndexById(currentID)
-    movieCollection = movieCollection[thisMovieIndex];
+    thisMovie = movieCollection[thisMovieIndex];
     installTemplate(data);
     await document.querySelector('.movie-details').addEventListener('click',({target: el}) => {
-        movieCollection = parseLocal();
         let counter = 0;
-        if(el.classList.contains('count-btns')) {
+
+        if(el.id === 'countUp') {
             el.setAttribute('data-count', ++counter)
-            movieCollection[thisMovieIndex].rate = counter
+            thisMovie.upVote = counter
+            saveToLocal(movieCollection);
+        };
+        if(el.id === 'countDown') {
+            el.setAttribute('data-count', ++counter)
+            thisMovie.downVote = counter
             saveToLocal(movieCollection);
         };
     });
@@ -271,14 +298,12 @@ async function handleModal() {
         })
     });
 }
-let thisMovie;
+
 async function postEditModal(currentID) {
     const response = await fetch('add-new.html');
     const data = await response.text();
     const thisMovieIndex = findIndexById(currentID)
     thisMovie = Array.of(movieCollection[thisMovieIndex]);
-    // movieCollection = Array.of(thisMovie);
-    // thisMovie = movieCollection
     let modalWrap = await document.createElement('div');
     modalWrap.innerHTML = getTemplate(data);
     $mainContent.appendChild(modalWrap);
@@ -286,46 +311,23 @@ async function postEditModal(currentID) {
     $('#Modal').on('hidden.bs.modal', function () {
         modalWrap.remove();
     });
-    console.log(movieCollection)
-    console.log(thisMovie)
-    handleModal()
+    handleModal();
     saveToLocal(movieCollection);
-}
+    thisMovie = '';
+};
 
 
-async function postModal(currentID) {
+async function postModal() {
     let modalWrap = await document.createElement('div');
     const response = await fetch('add-new.html');
     const data = await response.text();
     modalWrap.innerHTML = getTemplate(data);
     $mainContent.appendChild(modalWrap);
     $('#Modal').modal('show');
-    // if(!currentID) {
-    //     const response = await fetch('add-new.html');
-    //     const data = await response.text();
-    //     modalWrap.innerHTML = getTemplate(data);
-    //     $mainContent.appendChild(modalWrap);
-    //     $('#Modal').modal('show');
-    //     console.log(movieCollection)
-    // } else {
-    //     const response = await fetch('add-new.html');
-    //     const data = await response.text();
-    //     const thisMovieIndex = findIndexById(currentID)
-    //     let thisMovie = movieCollection[thisMovieIndex];
-    //     movieCollection = Array.of(thisMovie);
-    //     // thisMovie = movieCollection
-    //     modalWrap.innerHTML = getTemplate(data);
-    //     $mainContent.appendChild(modalWrap);
-    //     $('#Modal').modal('show');
-    //     console.log(movieCollection)
-    //     console.log(thisMovie)
-    //     movieCollection = parseLocal();
-    // };
     $('#Modal').on('hidden.bs.modal', function () {
         modalWrap.remove();
     });
-    handleModal()
-    
+    handleModal();
 };
 
 function parseLocal() {
