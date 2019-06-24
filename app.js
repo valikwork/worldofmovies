@@ -5,7 +5,7 @@ window.onload = function() {
         showMoviesList();
     };
     if (location.hash === '#search') {
-        
+        location.hash = '#list'
     };
     if (location.hash.length > 6) {
         const id = location.hash.slice(6)
@@ -79,13 +79,13 @@ async function showMoviesList() {
         card.addEventListener('click', async function (e) {
             const el = e.target
             const currentID = this.querySelector('.more').hash.slice(6);
-            if (el.id === 'editMovie') {
+            if (el.id === 'editMovie' || el.closest('#editMovie')) {
                 editMovie(currentID);
             };
             if (el.className === 'more'){
                 showMovie(currentID);
             };
-            if (el.id === 'deleteMovie'){
+            if (el.id === 'deleteMovie' || el.closest('#deleteMovie')){
                 let res = confirm('Вы действительно хотите удалить этот фильм?');
                 if (res) {
                     deleteMovie(currentID)
@@ -102,14 +102,14 @@ document.querySelector('#search').addEventListener('submit', function(e) {
     showMoviesSearch();
 });
 
-async function showMoviesSearch(id) {
-    let searchQuery = document.querySelector('#search').elements['search'] || id; // возможно убрать id
+async function showMoviesSearch() {
+    let searchQuery = document.querySelector('#search').elements['search'];
     movieCollection = parseLocal()
     let foundMovies = []
-    movieCollection.forEach(function(item) {
-        console.log()
-        if(item.movieName.split('').includes(searchQuery.value)) {
-           foundMovies.push(item);
+    movieCollection.forEach(function(film) {
+        let filmName = film.movieName.toLowerCase()
+        if(filmName.includes(searchQuery.value.toLowerCase())) {
+           foundMovies.push(film);
         };
     });
     movieCollection = foundMovies;
@@ -250,12 +250,12 @@ async function showMovie(currentID){
     await document.querySelector('.movie-details').addEventListener('click',({target: el}) => {
         let counter = 0;
 
-        if(el.id === 'countUp') {
+        if(el.id === 'countUp' || el.closest('#countUp')) {
             el.setAttribute('data-count', ++counter)
             thisMovie.upVote = counter
             saveToLocal(movieCollection);
         };
-        if(el.id === 'countDown') {
+        if(el.id === 'countDown' || el.closest('#countDown')) {
             el.setAttribute('data-count', ++counter)
             thisMovie.downVote = counter
             saveToLocal(movieCollection);
@@ -271,10 +271,10 @@ async function handleModal() {
         $('#Modal').modal('hide');
     });
 
-    await document.querySelector('.modal-content').addEventListener('click', async function(e) {
+    await document.querySelector('.modal-content').addEventListener('click', function(e) {
         const el = e.target;
         
-        let addField = document.createElement('div')
+        let addField = document.createElement('div');
         addField.setAttribute('class','add-field form-group row');
         addField.innerHTML = `<div class="col-sm-5">
                <input required type="text" name="add-position" class="form-control add-position" placeholder="Должность">
@@ -285,19 +285,19 @@ async function handleModal() {
              <div class="col-sm-2">
                <button class="btn btn-danger btn-sm btn-remove-field" id='removeField' type="button"><svg class="octicon octicon-x" viewBox="0 0 14 18" version="1.1" width="14" height="18" aria-hidden="true"><path fill-rule="evenodd" d="M7.48 8l3.75 3.75-1.48 1.48L6 9.48l-3.75 3.75-1.48-1.48L4.52 8 .77 4.25l1.48-1.48L6 6.52l3.75-3.75 1.48 1.48L7.48 8z"></path></svg></button>
              </div>`
-        if (el.id === 'addField') {
+        if (el.id === 'addField' || el.closest('#addField')) {
             document.querySelector('#fieldset').appendChild(addField);
         };
-        if (el.id === 'removeField') {
-            el.parentElement.parentElement.remove()
+        if (el.id === 'removeField' || el.closest('#removeField')) {
+            el.closest('.add-field').remove()
         };
         this.querySelector('#modalForm').addEventListener('submit', function(e) {
             e.preventDefault()
             e.stopImmediatePropagation();
             processModal();
-        })
+        });
     });
-}
+};
 
 async function postEditModal(currentID) {
     const response = await fetch('add-new.html');
