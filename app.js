@@ -30,7 +30,7 @@ function getTemplate(tpl) {
 };
 
 let movieCollection = parseLocal() || [];
-let thisMovie;
+// let thisMovie;
 
 function MOVIE(movieName, originalMovieName, movieYear, movieCountry, movieTagline, movieDirector, movieActors, movieIMDB, movieDescription, additionalPositions, moviePosterBase64) {
     this.id = Date.now()
