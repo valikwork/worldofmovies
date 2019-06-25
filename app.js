@@ -30,7 +30,7 @@ function getTemplate(tpl) {
 };
 
 let movieCollection = parseLocal() || [];
-// let thisMovie;
+let thisMovie;
 
 function MOVIE(movieName, originalMovieName, movieYear, movieCountry, movieTagline, movieDirector, movieActors, movieIMDB, movieDescription, additionalPositions, moviePosterBase64) {
     this.id = Date.now()
@@ -245,7 +245,8 @@ async function showMovie(currentID){
     const response = await fetch('movie.html');
     const data = await response.text();
     const thisMovieIndex = findIndexById(currentID)
-    thisMovie = movieCollection[thisMovieIndex];
+    thisMovie = Array.of(movieCollection[thisMovieIndex]) ;
+    console.log(thisMovie)
     installTemplate(data);
     await document.querySelector('.movie-details').addEventListener('click',({target: el}) => {
         let counter = 0;
