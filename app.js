@@ -261,6 +261,7 @@ async function showMovie(currentID){
             saveToLocal(movieCollection);
         };
     });
+    thisMovie = '';
 };
 async function handleModal() {
     await document.querySelector('#closeModal').addEventListener('click', function() {
@@ -314,10 +315,12 @@ async function postEditModal(currentID) {
     handleModal();
     saveToLocal(movieCollection);
     thisMovie = '';
+    console.log(thisMovie)
 };
 
 
 async function postModal() {
+    console.log(thisMovie)
     let modalWrap = await document.createElement('div');
     const response = await fetch('add-new.html');
     const data = await response.text();
