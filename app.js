@@ -245,20 +245,19 @@ async function showMovie(currentID){
     const response = await fetch('movie.html');
     const data = await response.text();
     const thisMovieIndex = findIndexById(currentID)
-    thisMovie = Array.of(movieCollection[thisMovieIndex]) ;
-    console.log(thisMovie)
+    thisMovie = Array.of(movieCollection[thisMovieIndex]);
     installTemplate(data);
     await document.querySelector('.movie-details').addEventListener('click',({target: el}) => {
         let counter = 0;
 
         if(el.id === 'countUp' || el.closest('#countUp')) {
             el.setAttribute('data-count', ++counter)
-            thisMovie.upVote = counter
+            thisMovie[0].upVote = counter
             saveToLocal(movieCollection);
         };
         if(el.id === 'countDown' || el.closest('#countDown')) {
             el.setAttribute('data-count', ++counter)
-            thisMovie.downVote = counter
+            thisMovie[0].downVote = counter
             saveToLocal(movieCollection);
         };
     });
