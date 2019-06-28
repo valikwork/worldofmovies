@@ -259,9 +259,11 @@ async function showMovie(currentID){
         };
         if(el.id === 'countDown' || el.closest('#countDown')) {
             el.setAttribute('data-count', ++counter)
+            console.log(thisMovie)
             thisMovie[0].downVote = counter
             saveToLocal(movieCollection);
         };
+        thisMovie = '';
     });
     thisMovie = '';
 };
